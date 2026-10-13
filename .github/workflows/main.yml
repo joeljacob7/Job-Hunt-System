@@ -17,6 +17,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Restore career profile
+        env:
+          CAREER_PROFILE_JSON: ${{ secrets.CAREER_PROFILE_JSON }}
+        run: |
+          mkdir -p Career-Facts
+          printf '%s' "$CAREER_PROFILE_JSON" > Career-Facts/career_profile.json
+
       - name: Run job discovery
         run: |
           python job_hunt.py discover --dry-run
