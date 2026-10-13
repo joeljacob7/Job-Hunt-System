@@ -1,0 +1,22 @@
+name: Job Hunt Search
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8,14 * * *"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run job discovery
+        run: |
+          python job_hunt.py discover --dry-run
