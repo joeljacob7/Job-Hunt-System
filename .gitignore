@@ -1,0 +1,29 @@
+# Python temporary files
+__pycache__/
+*.py[cod]
+
+# Secrets and local environment settings
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Personal resumes and generated application materials
+Master-Resumes/
+Outreach/
+Career-Facts/
+
+# Personal job-search records
+Applications/
+
+# Workflow backups
+Workflow-Backups/
+
+# Local editor settings
+.vscode/

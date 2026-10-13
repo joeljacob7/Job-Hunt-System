@@ -1,0 +1,37 @@
+{
+  "coverage_note": "Enabled sources: Careem and Tamara (Greenhouse), Deliverect (Lever), verified from official career pages. Coverage remains limited and is not the full UAE market.",
+  "verified_sources_checked": "2026-10-13",
+  "request_timeout_seconds": 20,
+  "salary_target": {
+    "currency": "AED",
+    "monthly_min": 6500
+  },
+  "city_priority": ["Dubai", "Sharjah", "Abu Dhabi", "Other UAE"],
+  "minimum_relevance_score": 35,
+  "review_threshold": 55,
+  "seniority_exclusions": ["senior", "lead", "head", "director", "vice president", "vp", "chief", "principal", "staff"],
+  "role_families": [
+    {"name": "Product Operations", "title_terms": ["product operations", "product ops"], "evidence_groups": ["product", "operations", "delivery"]},
+    {"name": "Product Associate", "title_terms": ["associate product manager", "product associate", "associate product owner", "junior product manager"], "evidence_groups": ["product", "implementation", "operations"]},
+    {"name": "SaaS Implementation and Delivery", "title_terms": ["implementation specialist", "implementation associate", "implementation coordinator", "implementation consultant", "implementation manager", "client implementation", "delivery specialist", "delivery associate", "implementation"], "evidence_groups": ["implementation", "delivery", "product"]},
+    {"name": "Customer Success and Onboarding", "title_terms": ["customer success", "client success", "customer onboarding", "client onboarding", "onboarding specialist", "onboarding manager"], "evidence_groups": ["customer", "implementation", "account"]},
+    {"name": "Business Operations", "title_terms": ["business operations analyst", "business operations associate", "business operations", "operations analyst"], "evidence_groups": ["operations", "analysis", "delivery"]},
+    {"name": "Business Analysis", "title_terms": ["business analyst", "business systems analyst", "process analyst"], "evidence_groups": ["analysis", "operations", "product"]},
+    {"name": "Project Coordination and Delivery", "title_terms": ["project coordinator", "project associate", "project administrator", "delivery coordinator", "project manager"], "evidence_groups": ["delivery", "implementation", "operations"]},
+    {"name": "Account and Client Delivery", "title_terms": ["account manager", "account management", "client delivery", "client manager", "partner success", "customer account manager"], "evidence_groups": ["account", "customer", "operations"]}
+  ],
+  "evidence_terms": {
+    "implementation": ["implementation", "onboarding", "rollout", "go-live", "configuration", "data migration", "integration", "uat", "user acceptance testing", "training"],
+    "customer": ["customer onboarding", "client onboarding", "customer success", "client success", "adoption", "post-launch support", "client feedback", "customer relationships", "partner satisfaction", "renewal", "training"],
+    "product": ["product requirements", "requirements gathering", "uat", "user acceptance testing", "feature definition", "workflow design", "a/b testing", "bug triage", "product feedback", "product operations"],
+    "operations": ["operational reporting", "process improvement", "workflow", "cost analysis", "profitability", "dashboards", "job costing", "scheduling", "attendance", "operations", "excel", "google sheets"],
+    "analysis": ["business analysis", "data analysis", "cost analysis", "profitability", "reporting", "dashboards", "excel", "google sheets", "requirements gathering", "process analysis"],
+    "delivery": ["project coordination", "project delivery", "rollout", "go-live", "stakeholder coordination", "implementation", "concurrent projects", "client training", "cross-functional", "delivery"],
+    "account": ["account management", "client relationship", "customer relationship", "partner management", "portfolio", "renewal", "client training", "demos", "customer success", "partner success"]
+  },
+  "sources": [
+    {"name": "Careem", "provider": "greenhouse", "board": "careem", "enabled": true, "verified": true, "verified_on": "2026-10-13"},
+    {"name": "Tamara", "provider": "greenhouse", "board": "tamara", "enabled": true, "verified": true, "verified_on": "2026-10-13", "verification_url": "https://tamara.co/en-ae/careers"},
+    {"name": "Deliverect", "provider": "lever", "board": "deliverect", "enabled": true, "verified": true, "verified_on": "2026-10-13", "verification_url": "https://www.deliverect.com/en/careers"}
+  ]
+}
