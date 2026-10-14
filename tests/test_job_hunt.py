@@ -1,4 +1,6 @@
 import unittest
+import tempfile
+from pathlib import Path
 from datetime import date
 
 import job_hunt
@@ -9,6 +11,19 @@ class JobHuntTests(unittest.TestCase):
     def setUpClass(cls):
         cls.config = job_hunt.load_config()
         cls.profile = job_hunt.load_profile()
+
+    def test_excel_export_has_clickable_application_link(self):
+        from openpyxl import load_workbook
+        row = {field: "" for field in job_hunt.CSV_FIELDS}
+        row.update({"job_id": "abc123", "company": "Example", "role": "Implementation Specialist", "application_url": "https://example.com/apply"})
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "jobs.xlsx"
+            job_hunt.export_tracker_xlsx([row], output)
+            workbook = load_workbook(output)
+            sheet = workbook["UAE Job Matches"]
+            self.assertEqual(sheet.cell(2, job_hunt.CSV_FIELDS.index("company") + 1).value, "Example")
+            link_cell = sheet.cell(2, job_hunt.CSV_FIELDS.index("application_url") + 1)
+            self.assertEqual(link_cell.hyperlink.target, "https://example.com/apply")
 
     def test_canonical_urls_deduplicate_tracking_variants(self):
         first = "https://www.boards.greenhouse.io/careem/jobs/123?utm_source=mail&gh_jid=123#apply"

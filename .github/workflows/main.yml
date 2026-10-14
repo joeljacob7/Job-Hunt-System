@@ -1,0 +1,62 @@
+name: Job Hunt Search
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8,14 * * *" # 12:00 and 18:00 UAE time (UTC+4)
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install spreadsheet dependency
+        run: python -m pip install openpyxl
+
+      - name: Restore career profile
+        env:
+          CAREER_PROFILE_JSON: ${{ secrets.CAREER_PROFILE_JSON }}
+        run: |
+          test -n "$CAREER_PROFILE_JSON" || { echo "CAREER_PROFILE_JSON secret is missing"; exit 1; }
+          mkdir -p Career-Facts
+          printf '%s' "$CAREER_PROFILE_JSON" > Career-Facts/career_profile.json
+
+      - name: Restore previous tracker from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: Applications
+          key: job-tracker-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-tracker-
+
+      - name: Run job discovery
+        run: python job_hunt.py discover --skip-drafts
+
+      - name: Save tracker for future runs
+        uses: actions/cache/save@v4
+        if: always() && hashFiles('Applications/jobs.csv') != ''
+        with:
+          path: Applications
+          key: job-tracker-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload job tracker
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('Applications/jobs.csv') != ''
+        with:
+          name: job-hunt-results-${{ github.run_number }}
+          path: |
+            Applications/jobs.csv
+            Applications/jobs.xlsx
+          if-no-files-found: warn
+          retention-days: 30

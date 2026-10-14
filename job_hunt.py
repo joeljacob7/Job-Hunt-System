@@ -20,11 +20,16 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
+
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "job_hunt_config.json"
 PROFILE_PATH = ROOT / "Career-Facts" / "career_profile.json"
 TRACKER_PATH = ROOT / "Applications" / "jobs.csv"
+EXCEL_PATH = ROOT / "Applications" / "jobs.xlsx"
 LOG_PATH = ROOT / "Logs" / "job_hunt.log"
 CSV_FIELDS = [
     "job_id", "job_key", "company", "role", "location", "location_priority",
@@ -455,12 +460,40 @@ def write_tracker(rows: list[dict[str, Any]], path: Path = TRACKER_PATH) -> None
             os.unlink(temp_name)
 
 
+def export_tracker_xlsx(rows: list[dict[str, Any]], path: Path = EXCEL_PATH) -> None:
+    """Write a readable Excel tracker with filterable headers and clickable job links."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "UAE Job Matches"
+    sheet.append(CSV_FIELDS)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1F4E78")
+    for row in rows:
+        sheet.append([row.get(field, "") for field in CSV_FIELDS])
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+    for row_index in range(2, sheet.max_row + 1):
+        for column_name in ("application_url", "canonical_job_url", "source_url"):
+            column_index = CSV_FIELDS.index(column_name) + 1
+            cell = sheet.cell(row=row_index, column=column_index)
+            if isinstance(cell.value, str) and cell.value.startswith(("https://", "http://")):
+                cell.hyperlink = cell.value
+                cell.style = "Hyperlink"
+    for column_index, field in enumerate(CSV_FIELDS, start=1):
+        values = [str(sheet.cell(row=r, column=column_index).value or "") for r in range(1, min(sheet.max_row, 150) + 1)]
+        max_length = max((len(value) for value in values), default=len(field))
+        sheet.column_dimensions[get_column_letter(column_index)].width = min(max(max_length + 2, 12), 48)
+    workbook.save(path)
+
+
 def setup_logging() -> None:
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(filename=LOG_PATH, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", encoding="utf-8")
 
 
-def discover(dry_run: bool = False):
+def discover(dry_run: bool = False, skip_drafts: bool = False):
     config, profile = load_config(), load_profile()
     incoming, counts, errors = [], {}, []
     for source in config["sources"]:
@@ -482,10 +515,13 @@ def discover(dry_run: bool = False):
             errors.append(message)
             logging.error("Source failed: %s", message)
     incoming.sort(key=lambda row: (int(row["location_priority"]), -int(row["match_score"]), row["company"].casefold()))
-    if not dry_run and incoming:
+    if not dry_run:
         existing = read_tracker()
-        incoming = generate_review_drafts(incoming, existing, config, profile)
-        write_tracker(upsert_tracker(existing, incoming))
+        if incoming and not skip_drafts:
+            incoming = generate_review_drafts(incoming, existing, config, profile)
+        merged = upsert_tracker(existing, incoming)
+        write_tracker(merged)
+        export_tracker_xlsx(merged)
         logging.info("Tracker upsert complete; eligible incoming listings: %d", len(incoming))
     return incoming, counts, errors
 
@@ -614,6 +650,7 @@ def run_cli(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     discover_parser = commands.add_parser("discover", help="Fetch configured public ATS feeds and update the CSV tracker")
     discover_parser.add_argument("--dry-run", action="store_true", help="Fetch and score listings without changing the tracker")
+    discover_parser.add_argument("--skip-drafts", action="store_true", help="Update trackers without creating resume/outreach drafts")
     list_parser = commands.add_parser("list", help="Show tracked jobs")
     list_parser.add_argument("--all", action="store_true", help="Include jobs below the review threshold")
     draft_parser = commands.add_parser("draft", help="Create resume and outreach drafts for a tracked job")
@@ -622,13 +659,15 @@ def run_cli(argv: list[str] | None = None) -> int:
     setup_logging()
     try:
         if args.command == "discover":
-            incoming, counts, errors = discover(args.dry_run)
+            incoming, counts, errors = discover(args.dry_run, args.skip_drafts)
             for source, count in counts.items():
                 print(f"{source}: fetched {count} public listings")
             for row in incoming:
                 print(f"{row['location']:<24} {row['match_score']:>3}  {row['company']} | {row['role']} | {row['salary_assessment']}")
             suffix = " (dry run; tracker unchanged)" if args.dry_run else ""
             print(f"Eligible UAE listings: {len(incoming)}{suffix}")
+            if not args.dry_run:
+                print(f"Excel tracker: {EXCEL_PATH.relative_to(ROOT)}")
             for error in errors:
                 print(f"Source error: {error}")
             return 1 if errors and not counts else 0
