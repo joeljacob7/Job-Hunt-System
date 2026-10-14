@@ -3,11 +3,11 @@ name: Job Hunt Search
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8,14 * * *" # 12:00 and 18:00 UAE time (UTC+4)
+    - cron: "0 8,14 * * *"
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 jobs:
   discover:
@@ -44,15 +44,15 @@ jobs:
         run: python job_hunt.py discover --skip-drafts
 
       - name: Save tracker for future runs
-        uses: actions/cache/save@v4
         if: always() && hashFiles('Applications/jobs.csv') != ''
+        uses: actions/cache/save@v4
         with:
           path: Applications
           key: job-tracker-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload job tracker
-        uses: actions/upload-artifact@v4
         if: always() && hashFiles('Applications/jobs.csv') != ''
+        uses: actions/upload-artifact@v4
         with:
           name: job-hunt-results-${{ github.run_number }}
           path: |
