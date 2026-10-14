@@ -67,7 +67,7 @@ def load_json(path: Path) -> dict[str, Any]:
 def load_config() -> dict[str, Any]:
     config = load_json(CONFIG_PATH)
     for source in config.get("sources", []):
-        if source.get("provider") not in {"greenhouse", "lever"}:
+        if source.get("provider") not in {"greenhouse", "lever", "ashby", "pinpoint", "workable"}:
             raise ValueError(f"Unsupported ATS provider: {source.get('provider')}")
         if not re.fullmatch(r"[A-Za-z0-9_-]+", source.get("board", "")):
             raise ValueError(f"Invalid public ATS board identifier: {source.get('name')}")
@@ -335,7 +335,13 @@ def source_endpoint(source: dict[str, Any]) -> str:
     board = urllib.parse.quote(source["board"], safe="")
     if source["provider"] == "greenhouse":
         return f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true"
-    return f"https://api.lever.co/v0/postings/{board}?mode=json"
+    if source["provider"] == "lever":
+        return f"https://api.lever.co/v0/postings/{board}?mode=json"
+    if source["provider"] == "ashby":
+        return f"https://api.ashbyhq.com/posting-api/job-board/{board}?includeCompensation=true"
+    if source["provider"] == "workable":
+        return f"https://apply.workable.com/api/v1/widget/accounts/{board}?details=true"
+    return f"https://{board}.pinpointhq.com/postings.json"
 
 
 def fetch_source(source: dict[str, Any], timeout: int = 20) -> list[dict[str, Any]]:
@@ -346,9 +352,17 @@ def fetch_source(source: dict[str, Any], timeout: int = 20) -> list[dict[str, An
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         payload = json.loads(response.read().decode("utf-8"))
-    jobs = payload.get("jobs", []) if source["provider"] == "greenhouse" else payload
-    if not isinstance(jobs, list):
+    provider = source["provider"]
+    if provider in {"greenhouse", "ashby", "workable"}:
+        jobs = payload.get("jobs") if isinstance(payload, dict) else None
+    elif provider == "pinpoint":
+        jobs = payload.get("data") if isinstance(payload, dict) else None
+    else:
+        jobs = payload
+    if not isinstance(jobs, list) or any(not isinstance(job, dict) for job in jobs):
         raise ValueError(f"Unexpected response shape from {source['name']}")
+    if provider == "ashby":
+        jobs = [job for job in jobs if job.get("isListed") is not False]
     return jobs
 
 
@@ -360,15 +374,86 @@ def normalize_listing(raw: dict[str, Any], source: dict[str, Any]) -> dict[str, 
         description = raw.get("content", "") or ""
         salary_raw = raw.get("salary") or raw.get("compensation")
         company, role = raw.get("company_name") or source["name"], raw.get("title", "")
-    else:
+    elif source["provider"] == "lever":
         categories = raw.get("categories") or {}
         location, url = categories.get("location", ""), raw.get("hostedUrl", "")
         description = raw.get("descriptionPlain") or raw.get("description", "") or ""
         salary_raw = raw.get("salaryRange") or raw.get("salary")
         company, role = raw.get("company") or source["name"], raw.get("text", "")
+    elif source["provider"] == "ashby":
+        address_value = raw.get("address")
+        address = address_value.get("postalAddress") or {} if isinstance(address_value, dict) else {}
+        location = raw.get("location") or ", ".join(
+            str(part) for part in (
+                address.get("addressLocality"), address.get("addressRegion"),
+                address.get("addressCountry"),
+            ) if part
+        )
+        url = raw.get("jobUrl", "")
+        description = raw.get("descriptionPlain") or raw.get("descriptionHtml", "") or ""
+        compensation_value = raw.get("compensation")
+        compensation = compensation_value if isinstance(compensation_value, dict) else {}
+        salary_raw = (
+            compensation.get("scrapeableCompensationSalarySummary")
+            or compensation.get("compensationTierSummary")
+        )
+        company, role = source["name"], raw.get("title", "")
+    elif source["provider"] == "workable":
+        locations = raw.get("locations")
+        visible_locations = [
+            location for location in locations
+            if isinstance(location, dict) and location.get("hidden") is not True
+        ] if isinstance(locations, list) else []
+        if visible_locations:
+            location = "; ".join(
+                ", ".join(
+                    str(part) for part in (
+                        item.get("city"), item.get("region"), item.get("country"),
+                    ) if part
+                )
+                for item in visible_locations
+            )
+        else:
+            location = ", ".join(
+                str(part) for part in (raw.get("city"), raw.get("state"), raw.get("country")) if part
+            )
+        url = raw.get("url") or raw.get("shortlink", "")
+        description = raw.get("description", "") or ""
+        salary_raw = raw.get("salary")
+        company, role = source["name"], raw.get("title", "")
+    else:
+        location_value = raw.get("location") or {}
+        if isinstance(location_value, dict):
+            location = ", ".join(
+                str(part) for part in (
+                    location_value.get("city"), location_value.get("province"),
+                    location_value.get("name"),
+                ) if part
+            )
+        else:
+            location = str(location_value)
+        url = raw.get("url", "")
+        description = "\n".join(
+            str(raw.get(field) or "") for field in (
+                "description", "benefits", "key_responsibilities",
+                "skills_knowledge_expertise",
+            ) if raw.get(field)
+        )
+        if raw.get("compensation_minimum") is not None or raw.get("compensation_maximum") is not None:
+            salary_raw = {
+                "min": raw.get("compensation_minimum"),
+                "max": raw.get("compensation_maximum"),
+                "currency": raw.get("compensation_currency"),
+                "interval": raw.get("compensation_frequency"),
+            }
+        else:
+            salary_raw = None
+        company, role = source["name"], raw.get("title", "")
+        raw = {**raw, "application_deadline": raw.get("deadline_at")}
     return {
         "company": str(company).strip(), "title": str(role).strip(), "location": str(location).strip(),
-        "application_url": raw.get("applyUrl", "") or url, "canonical_job_url": canonicalize_url(url),
+        "application_url": raw.get("applyUrl", "") or raw.get("application_url", "") or url,
+        "canonical_job_url": canonicalize_url(url),
         "source_name": source["name"], "source_url": source_endpoint(source),
         "description": html.unescape(str(description)), "salary_raw": salary_raw, "raw": raw,
     }

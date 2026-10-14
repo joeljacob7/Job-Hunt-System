@@ -20,11 +20,11 @@ Normal discovery creates separate Markdown resume and outreach drafts for jobs a
 
 ## Scope and behavior
 
-- The only enabled source is Careem's public Greenhouse job-board endpoint, verified on 2026-10-13. Add other company board IDs in `job_hunt_config.json` only after independently verifying each public endpoint. This is narrow coverage, not the whole UAE market.
+- Enabled public job-board sources are Careem and Tamara (Greenhouse), Deliverect (Lever), Ziina, Cohere, and qlub (Ashby), Tabby (Pinpoint), and Bayut | dubizzle (Workable). Their career pages and public feeds were verified on 2026-10-14. Add sources in `job_hunt_config.json` only after independently verifying the employer's official careers page and public feed. This is narrow coverage, not the whole UAE market.
 - UAE locations are required. Results are ordered Dubai, Sharjah, Abu Dhabi, then other UAE locations.
 - The salary floor is AED 6,500 per month. Explicit AED annual values are divided by 12. Foreign currency is not converted because no reliable live exchange source is configured. Unknown or ambiguous pay remains flagged for human review; known ranges entirely below target are excluded.
 - Rule-based match scores use target role family, intersections between job requirements and resume-backed evidence groups, and explicit experience, education, and tool requirements. It is a review aid, not a hiring prediction. Senior/leadership titles and experience requirements above five years are excluded.
-- No schedule is configured. Network calls are public HTTPS GET requests to Greenhouse or Lever endpoints. There are no credentials, paid APIs, or third-party Python dependencies.
+- Local discovery uses public HTTPS GET requests to Greenhouse, Lever, Ashby, Pinpoint, and Workable endpoints. No credentials, paid APIs, or third-party Python dependencies are required.
 ## GitHub Actions cloud discovery
 
 The workflow at `.github/workflows/main.yml` runs at 12:00 and 18:00 UAE time (UTC+4), and can also be run manually. It restores `CAREER_PROFILE_JSON` from a repository secret, discovers jobs without generating resume drafts, updates the CSV tracker, writes `Applications/jobs.xlsx`, caches tracker state for later runs, and uploads CSV/XLSX results as a downloadable artifact. The cache is convenient persistence, not a permanent database; download the artifacts periodically as a backup.

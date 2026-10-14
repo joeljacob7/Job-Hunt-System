@@ -1,6 +1,6 @@
 {
-  "coverage_note": "Enabled sources: Careem and Tamara (Greenhouse), Deliverect (Lever), verified from official career pages. Coverage remains limited and is not the full UAE market.",
-  "verified_sources_checked": "2026-10-13",
+  "coverage_note": "Enabled sources: Careem and Tamara (Greenhouse), Deliverect (Lever), Ziina, Cohere, and qlub (Ashby), Tabby (Pinpoint), and Bayut | dubizzle (Workable), verified from official career pages and public feeds. Coverage remains limited and is not the full UAE market.",
+  "verified_sources_checked": "2026-10-14",
   "request_timeout_seconds": 20,
   "salary_target": {
     "currency": "AED",
@@ -8,7 +8,7 @@
   },
   "city_priority": ["Dubai", "Sharjah", "Abu Dhabi", "Other UAE"],
   "minimum_relevance_score": 35,
-  "review_threshold": 55,
+  "review_threshold": 40,
   "seniority_exclusions": ["senior", "lead", "head", "director", "vice president", "vp", "chief", "principal", "staff"],
   "role_families": [
     {"name": "Product Operations", "title_terms": ["product operations", "product ops"], "evidence_groups": ["product", "operations", "delivery"]},
@@ -32,6 +32,11 @@
   "sources": [
     {"name": "Careem", "provider": "greenhouse", "board": "careem", "enabled": true, "verified": true, "verified_on": "2026-10-13"},
     {"name": "Tamara", "provider": "greenhouse", "board": "tamara", "enabled": true, "verified": true, "verified_on": "2026-10-13", "verification_url": "https://tamara.co/en-ae/careers"},
-    {"name": "Deliverect", "provider": "lever", "board": "deliverect", "enabled": true, "verified": true, "verified_on": "2026-10-13", "verification_url": "https://www.deliverect.com/en/careers"}
+    {"name": "Deliverect", "provider": "lever", "board": "deliverect", "enabled": true, "verified": true, "verified_on": "2026-10-13", "verification_url": "https://www.deliverect.com/en/careers"},
+    {"name": "Ziina", "provider": "ashby", "board": "ziina", "enabled": true, "verified": true, "verified_on": "2026-10-14", "verification_url": "https://ziina.com/careers"},
+    {"name": "Tabby", "provider": "pinpoint", "board": "tabby", "enabled": true, "verified": true, "verified_on": "2026-10-14", "verification_url": "https://tabby.ai/en-AE/careers"},
+    {"name": "Cohere", "provider": "ashby", "board": "cohere", "enabled": true, "verified": true, "verified_on": "2026-10-14", "verification_url": "https://cohere.com/careers"},
+    {"name": "qlub", "provider": "ashby", "board": "qlub", "enabled": true, "verified": true, "verified_on": "2026-10-14", "verification_url": "https://careers.qlub.io/"},
+    {"name": "Bayut | dubizzle", "provider": "workable", "board": "bayutdubizzle", "enabled": true, "verified": true, "verified_on": "2026-10-14", "verification_url": "https://www.dubizzlegroup.com/careers/"}
   ]
 }
